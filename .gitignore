@@ -26,3 +26,7 @@ yarn-error.log*
 out/
 
 commit.sh
+
+artifacts
+cache
+.env
