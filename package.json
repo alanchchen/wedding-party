@@ -9,7 +9,8 @@
     "@openzeppelin/contracts": "^4.5.0",
     "autoprefixer": "10.2.5",
     "hardhat": "^2.9.3",
-    "postcss": "8.2.8"
+    "postcss": "8.2.8",
+    "xdeployer": "^1.1.8"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "5.15.3",
@@ -36,9 +37,11 @@
     "dev": "next dev",
     "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm run build:tailwind && npm run dev",
     "build:tailwind": "tailwind build styles/index.css -o styles/tailwind.css",
+    "gen:metadata": "hardhat run ./scripts/generateMetadata.js",
     "itx:deposit": "hardhat run ./scripts/depositITX.js",
     "itx:balance": "hardhat run ./scripts/getITXBalance.js",
-    "deploy:testContract": "hardhat run ./scripts/deployTestContract.js --network rinkeby"
+    "deploy:testContract": "hardhat run ./scripts/deployTestContract.js --network rinkeby",
+    "deploy:all": "hardhat xdeploy"
   },
   "eslintConfig": {
     "extends": "react-app"

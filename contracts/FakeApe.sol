@@ -24,9 +24,8 @@ contract FakeApe is Ownable, NativeMetaTransaction, ERC721 {
         ERC721("FakeApe", "FA")
     {}
 
-    function mint(address to) public virtual onlyOwner {
-        uint256 tokenId = _tokenIdTracker.current();
-        _safeMint(to, tokenId);
+    function mint(address to) public onlyOwner {
+        _safeMint(to, _tokenIdTracker.current());
         _tokenIdTracker.increment();
     }
 
@@ -48,10 +47,7 @@ contract FakeApe is Ownable, NativeMetaTransaction, ERC721 {
         override
         returns (string memory)
     {
-        require(
-            _exists(tokenId),
-            "FakeApe: URI query for nonexistent token"
-        );
+        require(_exists(tokenId), "FakeApe: URI query for nonexistent token");
 
         string memory baseURI = _baseURI();
         uint256 id = (tokenId % RING_KINDS) + 1;
@@ -96,5 +92,22 @@ contract FakeApe is Ownable, NativeMetaTransaction, ERC721 {
         } else {
             return msg.data;
         }
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, NativeMetaTransaction)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IERC721).interfaceId ||
+            interfaceId == type(IERC721Metadata).interfaceId ||
+            interfaceId == type(INativeMetaTransaction).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }

@@ -4,6 +4,17 @@ import Notify from 'bnc-notify';
 import { default as axios } from 'axios';
 import * as ethers from 'ethers';
 
+const supportedNetworks = [
+  {
+    chainId: 137,
+    name: 'matic',
+  },
+  {
+    chainId: 4,
+    name: 'rinkeby',
+  },
+];
+
 const useInterval = (callback, delay) => {
   const savedCallbackRef = useRef();
 
@@ -24,6 +35,7 @@ const useInterval = (callback, delay) => {
 export default function Index() {
   const [isQubic, setIsQubic] = useState(false);
   const [account, setAccount] = useState(null);
+  const [network, setNetwork] = useState(supportedNetworks[0]);
   const [provider, setProvider] = useState(undefined);
 
   const [claimText, setClaimText] = useState('請使用 Qubic 錢包打開此頁面');
@@ -51,7 +63,7 @@ export default function Index() {
     }
 
     const hash = await axios
-      .get(`/api/claim/${account}`)
+      .get(`/api/claim/${account}?network=${network.name}`)
       .then(function (response) {
         const { data } = response;
         const { txHash: hash } = data;
@@ -65,7 +77,7 @@ export default function Index() {
     console.log('RelayTransactionHash', hash);
     setRelayTxHash(hash);
     setPending(true);
-  }, [account, notify, pending]);
+  }, [account, network, notify, pending]);
 
   const complete = useCallback(() => {
     setPending(false);
@@ -78,6 +90,9 @@ export default function Index() {
         setProvider(window.ethereum);
         setIsQubic(true);
         setClaimText('點此領取您的婚禮小物');
+        window.ethereum.on('chainChanged', (_chainId) =>
+          window.location.reload()
+        );
       } else {
         setProvider(undefined);
         setIsQubic(false);
@@ -100,25 +115,58 @@ export default function Index() {
     };
 
     setupAccount();
-  }, [isQubic, provider, setAccount]);
+
+    const setupNetwork = async () => {
+      const chainIdStr = await provider.request({
+        method: 'eth_chainId',
+      });
+
+      const chainId = Number(chainIdStr);
+
+      const n = supportedNetworks.find((sn) => sn.chainId === chainId);
+
+      if (!n) {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: supportedNetworks[0].chainId }],
+        });
+
+        return;
+      }
+
+      setNetwork(n);
+    };
+
+    setupNetwork();
+  }, [isQubic, provider]);
 
   useEffect(() => {
     if (!process.env.BNC_API_KEY) return;
 
     const option = {
       dappId: process.env.BNC_API_KEY, // [String] The API key created by step one above
-      networkId: 4, // [Integer] The Ethereum network ID your Dapp uses.
+      networkId: network.chainId, // [Integer] The Ethereum network ID your Dapp uses.
     };
     console.log('notify', option);
     setNotify(Notify(option));
-  }, []);
+  }, [network]);
+
+  useEffect(() => {
+    if (!isQubic || !notify || !account || !canClaim) {
+      return;
+    }
+
+    notify.notification({
+      message: `帳號: ${account}`
+    });
+  }, [isQubic, notify, account, canClaim]);
 
   useInterval(
     () => {
       const getTxHash = async () => {
         const { txHash: newTxHash, confirmations: incomingConfirmations = 0 } =
           await axios
-            .get(`/api/transaction/${relayTxHash}`)
+            .get(`/api/transaction/${relayTxHash}?network=${network.name}`)
             .then(function (response) {
               const { data } = response;
               return data;
@@ -186,7 +234,7 @@ export default function Index() {
   return (
     <>
       {
-        <section className="mt-48 md:mt-40 pb-40 relative bg-blueGray-100">
+        <section className="md:mt-40 mt-10 mb-10 relative bg-blueGray-100">
           <div
             className="-mt-20 top-0 bottom-auto left-0 right-0 w-full absolute h-20"
             style={{ transform: 'translateZ(0)' }}
@@ -207,8 +255,8 @@ export default function Index() {
             </svg>
           </div>
           <div className="container mx-auto">
-            <div className="flex flex-wrap items-center">
-              <div className="w-11/12 md:w-6/12 lg:w-4/12 px-12 md:px-4 mr-auto ml-auto -mt-32">
+            <div className="sm:flex sm:flex-wrap items-center">
+              <div className="w-11/12 md:w-/12 lg:w-4/12 px-12 md:px-4 mr-auto ml-auto">
                 <div className="relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded-lg bg-blueGray-700">
                   <img
                     src="/img/wedding-party-cover.png"
@@ -230,9 +278,14 @@ export default function Index() {
                     <h4 className="text-xl font-bold text-white">
                       歡迎來到 Alan 與 Ariel 的婚禮派對
                     </h4>
-                    <p className="text-md font-light mt-2 text-white">
+                    {/* <p className="text-md font-light mt-2 text-white">
                       錢包地址: {account}
-                    </p>
+                    </p> */}
+                    {network.name === 'rinkeby' && (
+                      <p className="text-md font-light mt-2 text-white">
+                        網路: {network.name}
+                      </p>
+                    )}
                     <button
                       className="w-full bg-blueGray-400 text-white active:bg-blueGray-600 font-bold uppercase text-base px-3 py-4 rounded shadow-md hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150 mt-8"
                       type="button"

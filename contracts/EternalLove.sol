@@ -16,31 +16,40 @@ contract EternalLove is Ownable, NativeMetaTransaction, ERC721 {
 
     uint256 constant RING_KINDS = 5;
 
-    string internal constant BASEURI =
-        "ipfs://QmVsUm46qMg5J42ingWaHR72ApSdjMCKvwLpeeh7gPTHC7/";
+    string internal _baseUri;
+    string internal _contractUri;
 
-    constructor()
-        NativeMetaTransaction("EternalLove", "1")
-        ERC721("EternalLove", "ELOVE")
-    {}
+    constructor(
+        address owner,
+        string memory name,
+        string memory baseUri,
+        string memory contractUri
+    ) NativeMetaTransaction(name, "1") ERC721(name, "ELOVE") {
+        _transferOwnership(owner);
+        _tokenIdTracker.increment();
+        _baseUri = baseUri;
+        _contractUri = contractUri;
+    }
 
-    function mint(address to)
-        public
-        virtual
-        onlyOwner
-        returns (uint256 tokenId)
-    {
-        tokenId = _tokenIdTracker.current();
-        _safeMint(to, tokenId);
+    function mint(address to) public virtual onlyOwner {
+        _safeMint(to, _tokenIdTracker.current());
         _tokenIdTracker.increment();
     }
 
-    function contractURI() public pure returns (string memory) {
-        return "";
+    function contractURI() public view virtual returns (string memory) {
+        return _contractUri;
+    }
+
+    function setContractURI(string memory contractUri) public onlyOwner {
+        _contractUri = contractUri;
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
-        return BASEURI;
+        return _baseUri;
+    }
+
+    function setBaseURI(string memory baseUri) public onlyOwner {
+        _baseUri = baseUri;
     }
 
     /**
@@ -101,5 +110,22 @@ contract EternalLove is Ownable, NativeMetaTransaction, ERC721 {
         } else {
             return msg.data;
         }
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, NativeMetaTransaction)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IERC721).interfaceId ||
+            interfaceId == type(IERC721Metadata).interfaceId ||
+            interfaceId == type(INativeMetaTransaction).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }

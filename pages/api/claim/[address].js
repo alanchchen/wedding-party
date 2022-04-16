@@ -21,7 +21,7 @@ const mint = (contractAddress, to) => {
       const chainId = await signer.getChainId();
 
       const iface = new ethers.utils.Interface([
-        'function executeMetaTransaction(address authorizer,bytes32 nonce,bytes memory callData,uint256 deadline,uint8 v,bytes32 r,bytes32 s)',
+        'function executeMetaTransaction(address relayer,address authorizer,bytes32 nonce,bytes memory callData,uint256 deadline,uint8 v,bytes32 r,bytes32 s)',
       ]);
 
       const typedData = {
@@ -33,6 +33,7 @@ const mint = (contractAddress, to) => {
             { name: 'verifyingContract', type: 'address' },
           ],
           MetaTransaction: [
+            { name: 'relayer', type: 'address' },
             { name: 'authorizer', type: 'address' },
             { name: 'nonce', type: 'bytes32' },
             { name: 'callData', type: 'bytes' },
@@ -47,6 +48,7 @@ const mint = (contractAddress, to) => {
         },
         primaryType: 'MetaTransaction',
         message: {
+          relayer: ethers.constants.AddressZero,
           authorizer: signer.address,
           nonce,
           callData,
@@ -65,6 +67,7 @@ const mint = (contractAddress, to) => {
       const { r, s, v } = ethers.utils.splitSignature(signature);
 
       const data = iface.encodeFunctionData('executeMetaTransaction', [
+        ethers.constants.AddressZero,
         signer.address,
         nonce,
         callData,
@@ -118,27 +121,27 @@ const mint = (contractAddress, to) => {
 
 export default async function handler(req, res) {
   const {
-    query: { address },
+    query: { address, network },
   } = req;
 
   const itxProvider = new ethers.providers.InfuraProvider(
-    'rinkeby', // or 'ropsten', 'rinkeby', 'kovan', 'goerli'
+    network,
     process.env.INFURA_PROJECT_ID
   );
 
   const signer = new ethers.Wallet(process.env.PRIVATE_KEY, itxProvider);
 
   const metaTx = await mint(
-    '0x44410313C0C95209297D59A7951D63343959e82F',
+    process.env.CONTRACT_ADDRESS,
     address
   ).toMetaTransaction(
     signer,
-    'FakeApe',
+    process.env.CONTRACT_NAME,
     ethers.utils.randomBytes(32),
     Math.floor(Date.now() / 1000) + 3600
   );
 
-  const relayTransactionHash = await metaTx.send(signer, '150000');
+  const relayTransactionHash = await metaTx.send(signer, '200000');
 
   // 0xb50fac40626ae6a491c87941195c038f0a26ae6a2d780d53c911f50e8cfbf3ec
 

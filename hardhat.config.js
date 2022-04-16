@@ -1,4 +1,5 @@
 require('@nomiclabs/hardhat-ethers');
+require('xdeployer');
 
 require('dotenv').config();
 
@@ -23,5 +24,14 @@ module.exports = {
   },
   mocha: {
     timeout: 40000,
+  },
+  xdeploy: {
+    contract: 'EternalLove',
+    constructorArgsPath: './contract-args.js',
+    salt: 'EternalLove',
+    signer: process.env.PRIVATE_KEY,
+    networks: ['rinkeby'],
+    rpcUrls: [`https://rinkeby.infura.io/v3/${process.env.INFURA_PROJECT_ID}`],
+    gasLimit: '5000000',
   },
 };

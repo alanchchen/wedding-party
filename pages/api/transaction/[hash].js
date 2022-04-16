@@ -2,12 +2,12 @@ import * as ethers from 'ethers';
 
 export default async function handler(req, res) {
   const {
-    query: { hash },
+    query: { hash, network },
     method,
   } = req;
 
   const itx = new ethers.providers.InfuraProvider(
-    'rinkeby', // or 'ropsten', 'rinkeby', 'kovan', 'goerli'
+    network,
     process.env.INFURA_PROJECT_ID
   );
 

@@ -2,9 +2,11 @@
 pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 import "./EIP712.sol";
 import "./EIP712Domain.sol";
+import "./INativeMetaTransaction.sol";
 
 // Example typed data
 //
@@ -17,6 +19,7 @@ import "./EIP712Domain.sol";
 //           { name: "verifyingContract", type: "address" },
 //         ],
 //         MetaTransaction: [
+//           { name: "relayer", type: "address" },
 //           { name: "authorizer", type: "address" },
 //           { name: "nonce", type: "bytes32" },
 //           { name: "callData", type: "bytes" },
@@ -31,6 +34,7 @@ import "./EIP712Domain.sol";
 //       },
 //       primaryType: "MetaTransaction",
 //       message: {
+//         relayer: "0x...",
 //         authorizer: authorizer.address,
 //         nonce: ethers.utils.randomBytes(32),
 //         callData: "0x....",
@@ -38,11 +42,15 @@ import "./EIP712Domain.sol";
 //       },
 //     }
 //
-contract NativeMetaTransaction is Context, EIP712Domain {
+contract NativeMetaTransaction is
+    Context,
+    EIP712Domain,
+    INativeMetaTransaction
+{
     bytes32 private constant META_TRANSACTION_TYPEHASH =
         keccak256(
             bytes(
-                "MetaTransaction(address authorizer,bytes32 nonce,bytes callData,uint256 deadline)"
+                "MetaTransaction(address relayer,address authorizer,bytes32 nonce,bytes callData,uint256 deadline)"
             )
         );
 
@@ -71,6 +79,7 @@ contract NativeMetaTransaction is Context, EIP712Domain {
     }
 
     function executeMetaTransaction(
+        address relayer,
         address authorizer,
         bytes32 nonce,
         bytes memory callData,
@@ -79,8 +88,8 @@ contract NativeMetaTransaction is Context, EIP712Domain {
         bytes32 r,
         bytes32 s
     ) public payable returns (bytes memory) {
-        _requireValidFuntionCall(callData);
         _requireValidAuthorization(
+            relayer,
             authorizer,
             nonce,
             callData,
@@ -97,7 +106,7 @@ contract NativeMetaTransaction is Context, EIP712Domain {
 
         require(success, "NativeMetaTransaction: function call not successful");
         _markAuthorizationAsUsed(authorizer, nonce);
-        // emit MetaTransactionExecuted(authorizer, nonce, callData);
+        emit MetaTransactionExecuted(authorizer, nonce, callData);
 
         return returnData;
     }
@@ -170,7 +179,7 @@ contract NativeMetaTransaction is Context, EIP712Domain {
         );
 
         _markAuthorizationAsUsed(authorizer, nonce);
-        // emit MetaTransactionCanceled(authorizer, nonce);
+        emit MetaTransactionCanceled(authorizer, nonce);
     }
 
     /**
@@ -183,6 +192,7 @@ contract NativeMetaTransaction is Context, EIP712Domain {
      * @param s             s of the signature
      */
     function _requireValidAuthorization(
+        address relayer,
         address authorizer,
         bytes32 nonce,
         bytes memory callData,
@@ -190,7 +200,16 @@ contract NativeMetaTransaction is Context, EIP712Domain {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) private view {
+    ) internal view {
+        _requireValidFuntionCall(callData);
+
+        if (relayer != address(0)) {
+            require(
+                relayer == msg.sender,
+                "NativeMetaTransaction: unauthorized relayer"
+            );
+        }
+
         require(
             block.timestamp <= deadline,
             "NativeMetaTransaction: authorization is expired"
@@ -203,6 +222,7 @@ contract NativeMetaTransaction is Context, EIP712Domain {
 
         bytes memory data = abi.encode(
             META_TRANSACTION_TYPEHASH,
+            relayer,
             authorizer,
             nonce,
             keccak256(callData),
@@ -221,7 +241,7 @@ contract NativeMetaTransaction is Context, EIP712Domain {
      * @param nonce         Nonce of the authorization
      */
     function _markAuthorizationAsUsed(address authorizer, bytes32 nonce)
-        private
+        internal
     {
         _authorizationStates[authorizer][nonce] = true;
     }
@@ -261,5 +281,14 @@ contract NativeMetaTransaction is Context, EIP712Domain {
         } else {
             return msg.data;
         }
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        external
+        view
+        virtual
+        returns (bool)
+    {
+        return interfaceId == type(INativeMetaTransaction).interfaceId;
     }
 }

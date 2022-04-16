@@ -6,14 +6,14 @@ async function main() {
   console.log('Network:', networkName);
 
   try {
-    const creature = await ethers.getContractAt(
-      'FakeApe',
-      '0x89dAD29054791aF138785D6fB122cA9733b2c8a1'
+    const contract = await ethers.getContractAt(
+      'EternalLove',
+      process.env.CONTRACT_ADDRESS
     );
 
-    const uri = await creature.tokenURI(0);
+    const name = await contract.name();
 
-    console.log(`tokenURI:`, uri);
+    console.log(`name:`, name);
   } catch (e) {
     console.error(e);
   }
