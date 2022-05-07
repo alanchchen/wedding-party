@@ -9,7 +9,7 @@ async function main() {
 
   const signer = signers[0];
   const chainId = await signer.getChainId();
-  const depositValue = '0.1';
+  const depositValue = '10';
   console.log(
     `Deposit ${depositValue} for ${signer.address} on chain ${chainId}`
   );

@@ -69,6 +69,7 @@ export default function Index() {
         eventCode: 'claim',
         type: 'hint',
         message: '正在準備您的婚禮小物，請稍等 ...',
+        autoDismiss: 10000,
       });
     }
 
@@ -209,6 +210,7 @@ export default function Index() {
       emitter.on('txSent', (tx) => {
         return {
           message: `婚禮小物寄送中，請稍等 ...`,
+          autoDismiss: 10000,
         };
       });
       emitter.on('txPool', (tx) => {
@@ -221,7 +223,7 @@ export default function Index() {
         complete();
 
         return {
-          message: `快到錢包裡的收藏品頁看看你的婚禮小物吧 !!`,
+          message: `五分鐘內就可以在錢包裡的收藏品頁看到您的婚禮小物囉 !!`,
           autoDismiss: 10000,
         };
       });
@@ -236,7 +238,7 @@ export default function Index() {
       notify.notification({
         eventCode: 'claimComplete',
         type: 'success',
-        message: `快到錢包裡的收藏品頁看看你的婚禮小物吧 !!`,
+        message: `五分鐘內就可以在錢包裡的收藏品頁看到您的婚禮小物囉 !!`,
         autoDismiss: 10000,
       });
 

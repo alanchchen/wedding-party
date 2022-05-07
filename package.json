@@ -9,6 +9,7 @@
     "@openzeppelin/contracts": "^4.5.0",
     "autoprefixer": "10.2.5",
     "hardhat": "^2.9.3",
+    "hardhat-deploy": "^0.11.4",
     "postcss": "8.2.8",
     "xdeployer": "^1.1.8"
   },
@@ -20,7 +21,6 @@
     "@web3-react/eip1193": "^8.0.0-beta.0",
     "axios": "^0.26.1",
     "bnc-notify": "^1.9.4",
-    "chart.js": "2.9.4",
     "dotenv": "^16.0.0",
     "ethers": "^5.6.2",
     "gulp": "4.0.2",
@@ -41,7 +41,9 @@
     "itx:deposit": "hardhat run ./scripts/depositITX.js",
     "itx:balance": "hardhat run ./scripts/getITXBalance.js",
     "deploy:testContract": "hardhat run ./scripts/deployTestContract.js --network rinkeby",
-    "deploy:all": "hardhat xdeploy"
+    "deploy:all": "hardhat xdeploy",
+    "ipfs:upload:asset": "ipfs-upload-client --pin assets/eternal-love",
+    "ipfs:upload:metadata": "ipfs-upload-client --pin assets/metadata"
   },
   "eslintConfig": {
     "extends": "react-app"
